@@ -1,19 +1,192 @@
-# MMM.FUN Level Up · prototype
+# MMM.FUN · design file + Level Up prototype
 
-Interactive prototype of the Mmmmmm.fun flow, built from the `MMM.pen` frames in pen.dev.
+This repo holds two things:
+
+- **The design source:** `design/mmmfun-screens.pen`, a [Pencil / pen.dev](https://pen.dev) file with every screen, level and exploration.
+- **The interactive prototype:** `index.html`, built from HTML exports of that file and deployed to https://mmm-fun-prototype.vercel.app.
+
+The design file is the source of truth. The prototype is a snapshot built from it and can lag behind.
+
+![STARBAGS home](design/previews/07-starbags-home.png)
+
+## Repo layout
+
+| Path | What it is |
+|---|---|
+| `design/mmmfun-screens.pen` | The Pencil design file. Open it directly from here. |
+| `design/assets/` | Images the design references, such as token cutouts, logos and merch art. |
+| `design/images/` | Images generated inside Pencil, such as the NOBULL backdrop, tuna cutouts and STARBAGS light art. |
+| `design/fonts/` | Local-only licensed fonts. Gitignored, see [Fonts](#fonts). |
+| `design/previews/` | PNG snapshots of key screens for quick review without Pencil. |
+| `scripts/sync_design.py` | Copies a Pencil working file into `design/` and makes its asset paths portable. |
+| `index.html` | The built, self-contained prototype, deployed to Vercel as-is. |
+| `src/shell.html` | Prototype interaction layer, animations and demo dock. |
+| `src/build.py` | Merges pen.dev HTML exports into `shell.html` and inlines `src/assets`. |
+| `src/assets/` | Compressed images used by the prototype. |
+
+---
+
+## The design file
+
+### Opening it
+
+1. Install the Pencil desktop app and sign in to pen.dev.
+2. Open `design/mmmfun-screens.pen` from your clone of this repo.
+3. If you have the licensed PP Editorial New font, put `PPEditorialNew-Light.ttf` in `design/fonts/` first. Otherwise the NOBULL serif falls back to a default face. See [Fonts](#fonts).
+
+All image paths in the file are relative to `design/`, so it works from any clone location.
+
+### What's on the canvas
+
+Every screen is a top-level frame. Names start with the step number and level.
+
+| Group | Frames |
+|---|---|
+| **Level 1 · McD (McDoughnald's)** | 01 First Visit (Empty), 02 Add USDC, 03 Place First Order, 04 Order Confirmed, 05 Home (Authed · $62.47) |
+| **Promotions** | 06 Level Up → STARBAGS, Level Up → SWEETGREED · $1,000, Level Up → CARBONUS · $10,000, Level Up → NOBULL · $100,000 |
+| **Level homes** | 07 STARBAGS ($486.20), 08 SWEETGREED ($4,812.55), 09 CARBONUS ($38,450), 10 NOBULL ($128,940) |
+| **Mobile** | A `Mobile · …` version of each screen above, at 390 wide |
+| **mmm.supply** | The side-scrolling merch lander |
+| **Boards** | `NOBULL · Layout explorations` has directions A The Statement, B Private Terminal, C The Menu and C Search “tun”. Direction C is the chosen NOBULL direction. `Level search · “tun” results` shows the search results state for McD, STARBAGS, SWEETGREED and CARBONUS. |
+
+Previews of the main states are in `design/previews/`.
+
+### Design system
+
+Tokens live in the file's **variables**. Use them instead of hard-coded values when you add or change things. In Pencil, open the Variables panel. Through the MCP / `execute` API, call `GetVariables()`.
+
+- **Level theme:** One theme axis, `level`, with values `L1` to `L5`. These map to McD, STARBAGS, SWEETGREED, CARBONUS and NOBULL. The `lvl-*` variables resolve per level:
+  - **Fonts:** `lvl-font-display`, `lvl-font-body`, `lvl-font-label`
+  - **Radii:** `lvl-radius-card`, `lvl-radius-pill`
+  - **Surfaces:** `lvl-bg`, `lvl-surface`, `lvl-line`
+  - **Text:** `lvl-ink`, `lvl-muted`
+  - **Brand:** `lvl-brand`, `lvl-on-brand`, `lvl-action`, `lvl-on-action`, `lvl-highlight`
+  - **Market colors:** `lvl-up`, `lvl-down`
+- **Brand palettes:** `mcd-*`, `sb-*` (STARBAGS), `sg-*` (SWEETGREED), `cb-*` (CARBONUS), `nb-*` and `nobu-*` (NOBULL), `mmm-*` (mmm.supply).
+- **Fonts:** `font-*` variables per brand. `font-nobu-serif` drives every serif in NOBULL Direction C, so changing that one value swaps the face.
+- **Alternates:** `vault-*` and `ctr-*` are retired NOBULL explorations. Leave them alone unless you're reviving one.
+
+### Level rules
+
+These are product and design decisions that have already been made. Follow them so changes stay consistent.
+
+- **Never reveal the next level** on a level's own screens. That means no brand name, logo, colors or brand-styled chips. Say "Level 3", "under wraps" or the $ threshold instead. Only the level-up promotion sheet shows the newly unlocked brand.
+- **Token artwork belongs to the token, not the level.** `$MATCHA` uses the same cutout on every level. Never restyle or regenerate token images to match a theme. Generated imagery is only for backgrounds and decoration.
+- **Only show token data that exists in production:** name, ticker, price, change, market cap and bonding-curve progress. Don't invent taglines, descriptions or "menu notes".
+- **The portfolio card** has the value and change, a realistic chart, and the level's loyalty progress row. Nothing else: no holdings chips and no repeated stats. NOBULL has no progress row because it's the top level.
+- **Loyalty progress** is based on portfolio value and uses small counts, x of 10.
+
+  | Level | Progress |
+  |---|---|
+  | McD | 1 punch per $10, up to $100 |
+  | STARBAGS | 1★ per $100, up to $1K |
+  | SWEETGREED | 1 stamp per $1K |
+  | CARBONUS | $100K private-room minimum |
+
+  Never use per-order points.
+- **Money in is crypto only.** Pick the network, then the token, then show a deposit address with QR and copy. No card or Apple Pay rails, and no summary rows that restate a control.
+- **Order details** start collapsed on every level except STARBAGS.
+- **Search** is a "Search the menu" field centered at the top of the hero's middle column. On NOBULL Direction C it sits above the Omakase section. Results drop down under the field with the matched letters highlighted and the top match pre-selected.
+- **Shared desktop grid**, used by McD through CARBONUS:
+  - **Page:** 1440 wide with 48px gutters.
+  - **Header:** A 36px ticker plus a 92px nav.
+  - **Hero:** 360 / fill / 360 columns with a 28px gap. The hero height fits its tallest column.
+  - **Sections:** 36px titles and 14px subtitles.
+  - **Trending tiles:** 5 across, with 200px photo wells and 180px cutouts.
+  - **Launch tiles:** 6 across, with 150px wells and 136px cutouts.
+
+  Level personality comes from color, materials and type, not from changing the grid. NOBULL is the deliberate exception: Direction C replaces the grid with a centered menu card.
+- **Level looks:**
+  - **McD:** Red and yellow with stickers.
+  - **STARBAGS:** A deep-green hero with cream cards, and a light #F2F0EB body.
+  - **SWEETGREED:** Sage and cream.
+  - **CARBONUS:** Cream menu-stock "tickets".
+  - **NOBULL:** An omakase room in black lacquer and warm platinum.
+
+  No level section should sit on plain white.
+
+### Assets
+
+- **Adding an image:** Put the file under `design/assets/`, or `design/images/` for generated art. Reference it relative to the `.pen` file, for example `assets/MMM-assets/generated-5.webp`. Images generated inside Pencil land in `design/images/` automatically when you work on the repo copy.
+- **Token cutouts** are in `design/assets/MMM-assets/` as `generated*.webp`. Reuse them rather than adding new versions.
+- **One remote image** in mmm.supply loads from Unsplash. Everything else is local.
+
+### Fonts
+
+Most fonts are Google Fonts, so Pencil loads them automatically: Archivo, Archivo Black, Anton, Yellowtail, Fraunces, Nunito Sans, Lora, Instrument Sans, Oswald, Libre Baskerville, Inter, Cormorant Garamond and IBM Plex Mono.
+
+**PP Editorial New** by Pangram Pangram is commercially licensed. NOBULL Direction C uses it through `font-nobu-serif`. The design file embeds it from `design/fonts/PPEditorialNew-Light.ttf`, but that folder is gitignored because this repo is public. To see it, drop your licensed copy there.
+
+**PP Editorial Old** does not render in Pencil even when it's installed on your system, which is why Direction C uses Editorial New.
+
+---
+
+## Working on the design
+
+### Day-to-day
+
+Work directly on the repo copy so there's one source of truth.
+
+```bash
+git pull
+git checkout -b design/<short-change-name>
+# open design/mmmfun-screens.pen in Pencil, make changes, save
+```
+
+Before you commit:
+
+1. **Check the result.** Look for clipped text, collapsed layouts and contrast problems. Pencil's layout check, or `Get(screen, (n, c) => c.problems && Print(n.name, c.problems))` through the MCP, finds clipping.
+2. **Refresh previews** for any screen you changed. Export at 0.5× PNG into `design/previews/` and keep the existing file names.
+3. **Run `git status`.** Make sure new images are under `design/` and no font files are staged.
+4. **Commit and open a PR** with a sentence on what changed and why.
+
+```bash
+git add design scripts README.md
+git commit -m "Design: <what changed>"
+git push -u origin design/<short-change-name>
+```
+
+### If you edited a copy outside the repo
+
+Pencil keeps its own working copy in `~/.pencil/documents/<id>/`. That copy references images by relative paths, such as `../../../Desktop/MMM-assets/...`, that only work on the original machine. To bring it into the repo:
+
+```bash
+python3 scripts/sync_design.py                              # default working-copy path
+python3 scripts/sync_design.py "/path/to/some file.pen"     # or any other .pen
+```
+
+The script copies every referenced image into `design/`, rewrites the paths, strips the machine-specific `fileToken`, and writes `design/mmmfun-screens.pen`. It lists any files it couldn't find. Fix those before committing, then reopen the repo copy in Pencil and spot-check a few screens.
+
+### Working with an AI agent
+
+The file can be edited through Pencil's MCP tools, for example from Claude Code. Point the tools at the repo copy, `design/mmmfun-screens.pen`, and include the [Level rules](#level-rules) in the brief. Most past corrections came from breaking one of them.
+
+---
+
+## The interactive prototype
+
+Interactive prototype of the Mmmmmm.fun flow, built from HTML exports of the design file.
 
 **Live:** https://mmm-fun-prototype.vercel.app
 
-## What's in it
-- **Level 1 · McDoughnald's** — first visit → Load FLY sheet → first order → printed receipt (three.js paper print + tear) → authed home
-- **Promotions** to STARBAGS ($100), SWEETGREED ($1K), CARBONUS ($10K) and NOBULL ($100K), each with its own home
-- **mmm.supply** — the side-scrolling clothesline merch lander (wheel / drag / arrow keys)
-- A demo dock to step through levels (`←` `→`, `H` hides it)
+### What's in it
 
-## Files
-- `index.html` — the built, self-contained prototype (deployed to Vercel as-is)
-- `src/shell.html` — interaction layer, animations and demo dock
-- `src/build.py` — merges the pen.dev HTML exports into `shell.html` and inlines `src/assets`
-- `src/assets/` — compressed images used by the screens
+- **Level 1 · McDoughnald's:** First visit, then the Load FLY sheet, first order, printed receipt (three.js paper print and tear), and the authed home.
+- **Promotions** to STARBAGS ($100), SWEETGREED ($1K), CARBONUS ($10K) and NOBULL ($100K), each with its own home.
+- **mmm.supply:** The side-scrolling clothesline merch lander, driven by wheel, drag or arrow keys.
+- **A demo dock** to step through levels. Use `←` and `→` to move, and `H` to hide it.
 
-The page loads three.js r128 and html2canvas 1.4.1 from cdnjs; everything else is inline.
+The page loads three.js r128 and html2canvas 1.4.1 from cdnjs. Everything else is inline.
+
+### Rebuilding it from the design
+
+`index.html` was built from an earlier version of the design. It doesn't yet include the search, collapsed order details, the light STARBAGS body or the NOBULL Direction C layout. To rebuild:
+
+1. **Export HTML from Pencil** (`html-css`) for each screen and modal into one folder:
+   - **Screens:** `p01`, `p03`, `p05`, `p07`, `p08`, `p09`, `p10` and `supply`.
+   - **Modals:** `m_load`, `m_receipt`, `m_l2`, `m_l3`, `m_l4` and `m_l5`.
+2. **Point the build at that folder** by setting `SRC` at the top of `src/build.py`.
+3. **Check the modal frame IDs** in the `modals` list of `build.py`. Each must match the current design file.
+4. **Add any new images** to `src/assets/` as compressed `.webp`.
+5. **Build.** Run `cd src && python3 build.py`, which needs `beautifulsoup4` and `lxml`. Copy the resulting `mmm-fun-level-up.html` to `index.html`.
+6. **Open `index.html` locally,** step through every level with the demo dock, then commit. Vercel deploys from `main`.
