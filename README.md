@@ -189,7 +189,7 @@ Pencil runs an MCP server while the app is open, so an agent such as Claude Code
 
 ### What's in it
 
-- **Level 1 · McDoughnald's:** First visit, the crypto-only Add USDC sheet (tap the network or token to switch, copy the address), first order, printed receipt (three.js paper print and tear, punches stamped in), and the authed home.
+- **Level 1 · McDoughnald’s:** First visit, the crypto-only Add USDC sheet (pick a network, then a token, from their dropdowns; copy the address), first order, printed receipt (three.js paper print and tear, punches stamped in), and the authed home.
 - **Promotions** to STARBAGS ($100), SWEETGREED ($1K), CARBONUS ($10K) and NOBULL ($100K), each with its own home. NOBULL is Direction C, The Menu.
 - **Search the menu** on every home. Type, for example "tun", to get that level's results dropdown; arrow keys move, Enter picks, Esc closes. `⌘K` or `/` focuses it.
 - **Order details** start collapsed on every level except STARBAGS; tap the row to open or close them. Mobile sections with a chevron collapse too.

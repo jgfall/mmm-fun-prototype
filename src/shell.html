@@ -143,6 +143,21 @@ body.m #stage{box-shadow:0 0 0 1px #2b2926,0 30px 80px rgba(0,0,0,.5)}
 .ms-row{cursor:pointer}
 .ms-row:hover,.ms-row.sel{filter:brightness(.96)}
 .ms-empty{padding:18px 20px;font:inherit;opacity:.7}
+/* ---------- Add USDC: network and token dropdowns ---------- */
+.dd{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;display:none;flex-direction:column;gap:2px;padding:6px;background:#fff;border:1.5px solid #000;border-radius:14px;box-shadow:0 14px 28px rgba(0,0,0,.18);animation:dropIn .18s cubic-bezier(.2,1.2,.4,1) both}
+.dd.open{display:flex}
+[data-pencil-name="QR"]{isolation:isolate}  /* its modules carry export z-indexes; keep them from poking through the menu */
+.dd-opt{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:10px;cursor:pointer}
+.dd-opt:hover,.dd-opt:focus-visible{background:#FFF4D6}
+.dd-opt:focus-visible{outline:2px solid #000;outline-offset:-2px}
+.dd-opt.on{background:#FFF4D6}
+.dd-t{display:flex;flex-direction:column;flex:1;min-width:0}
+.dd-t b{font-weight:inherit}
+.dd-t i{font:500 11px Archivo,system-ui,sans-serif;font-style:normal;color:#6F6F6F;letter-spacing:.2px}
+.dd-ck{font:800 14px Archivo,system-ui,sans-serif;color:#DA291C;width:14px;text-align:center}
+.dd-chev{transition:rotate .2s ease}
+.dd-open .dd-chev{rotate:180deg}
+[data-pencil-name="Select"].dd-open{box-shadow:0 0 0 3px #FFBC0D}
 /* ---------- collapsible sections ---------- */
 [data-pencil-name="Collapse Header"],.ct-head{cursor:pointer;user-select:none}
 .ct-icon{transition:rotate .25s ease}
@@ -245,7 +260,7 @@ const SEARCH_TIP=' Or try <b>Search the menu</b>: type “tun”.';
 /* One walkthrough, two layouts. Desktop and mobile steps line up index for index, so switching keeps your place. */
 const FLOW=[
  {d:'p01',m:'mp01',lv:1,k:'Level 1 · first visit',h:'Empty wallet. Tap <b>Add USDC to start</b> in Quick Swap.',t:{d:['Swap CTA','Step 1'],m:['Swap CTA','STEP 1 Card']}},
- {d:'p01',m:'mp01',sheet:'load',lv:1,k:'Level 1 · add USDC',h:'Crypto in only. Tap the network or token to switch, copy the address, then tap <b>I’ve sent it</b>.',t:['Sent CTA']},
+ {d:'p01',m:'mp01',sheet:'load',lv:1,k:'Level 1 · add USDC',h:'Crypto in only. Pick a network, then a token, copy the address, then tap <b>I’ve sent it</b>.',t:['Sent CTA']},
  {d:'p03',m:'mp03',lv:1,k:'Level 1 · first order',h:'50 USDC landed. 25 USDC → 390.6 $BREW is ready. Tap <b>Place order</b>.',t:['Swap CTA']},
  {d:'p03',m:'mp03',sheet:'receipt',lv:1,k:'Level 1 · order up',h:'Two punches earned. Tap <b>View my bag</b>.',t:['View Bag','Keep Shopping']},
  {d:'p05',m:'mp05',lv:1,k:'Level 1 · authed home',h:'Bag is up to $62.47. Tap <b>Place order</b> to keep trading.'+SEARCH_TIP,t:['Swap CTA'],count:[25,62.47]},
@@ -521,7 +536,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 })));
 /* misclick on a screen or modal: nudge toward the right control */
 function nudge(){const s=STEPS[cur];if(!s.t.length)return;const el=byName(s.m?mod(s.m):scr(s.s),s.t[0])[0];if(!el)return;if(!s.m)el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse')}
-const QUIET='[data-pencil-name="Menu search"],.ms-drop,[data-pencil-name="Collapse Header"],.ct-head,.navlink,[data-pencil-name="Select"],[data-pencil-name="Copy"],[data-pencil-name="Close"]';
+const QUIET='[data-pencil-name="Menu search"],.ms-drop,.dd,[data-pencil-name="Collapse Header"],.ct-head,.navlink,[data-pencil-name="Select"],[data-pencil-name="Copy"],[data-pencil-name="Close"]';
 document.getElementById('stage').addEventListener('click',e=>{if(!STEPS[cur].m&&!e.target.closest(QUIET))nudge()});
 document.getElementById('modalWrap').addEventListener('click',e=>{if(!e.target.closest('.hot')&&!e.target.closest(QUIET))nudge()});
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay'&&/^mm?_load$/.test(STEPS[cur].m))go(0)});
@@ -541,10 +556,45 @@ document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==
     if(txt(ns,'V'))txt(ns,'V').textContent=N.n; if(txt(ns,'G'))txt(ns,'G').textContent=N.g;
     if(txt(ts,'V'))txt(ts,'V').textContent=T; if(txt(ts,'G'))txt(ts,'G').textContent=GLYPH[T];
     if(addr)addr.textContent=N.a; if(note)note.textContent=N.n+' network · '+T+' only';}
-  const bump=el=>{el.classList.remove('popT');void el.offsetWidth;el.classList.add('popT')};
   const ns=sel('Network'),ts=sel('Token');
-  if(ns){ns.classList.add('hot');ns.addEventListener('click',e=>{e.stopPropagation();ni=(ni+1)%NETS.length;ti=Math.min(ti,NETS[ni].t.length-1);paint();bump(ns)})}
-  if(ts){ts.classList.add('hot');ts.addEventListener('click',e=>{e.stopPropagation();ti=(ti+1)%NETS[ni].t.length;paint();bump(ts)})}
+  const TOKEN_NAME={USDC:'USD Coin',USDT:'Tether',ETH:'Ether',SOL:'Solana'};
+  /* a dropdown under the select: the select's own glyph disc and label type, one row per option, a check on the current one */
+  function dropdown(selEl,items,current,onPick){
+    if(!selEl) return;
+    selEl.classList.add('hot'); selEl.setAttribute('role','button'); selEl.setAttribute('aria-haspopup','listbox'); selEl.tabIndex=0;
+    const host=selEl.parentElement; host.style.position='relative';
+    const row=host.parentElement; row.style.position='relative'; row.style.zIndex='30';   /* keep the menu above the QR modules below */
+    const chev=selEl.lastElementChild; if(chev) chev.classList.add('dd-chev');
+    const dd=document.createElement('div'); dd.className='dd'; dd.setAttribute('role','listbox'); host.appendChild(dd);
+    const label=txt(selEl,'V'), disc=txt(selEl,'G')&&txt(selEl,'G').parentElement;
+    function build(){
+      dd.innerHTML='';
+      items().forEach((it,k)=>{
+        const o=document.createElement('button'); o.type='button'; o.className='dd-opt'; o.setAttribute('role','option');
+        const on=k===current(); o.setAttribute('aria-selected',on); if(on) o.classList.add('on');
+        if(disc){const d=disc.cloneNode(true); d.removeAttribute('data-pencil-id'); d.querySelectorAll('[data-pencil-id]').forEach(n=>n.removeAttribute('data-pencil-id'));
+          const g=d.querySelector('[data-pencil-name="G"]')||d; g.textContent=it.g; o.appendChild(d)}
+        const t=document.createElement('span'); t.className='dd-t'; t.innerHTML='<b></b><i></i>'; t.firstChild.textContent=it.label; t.lastChild.textContent=it.sub||'';
+        if(label){const cs=getComputedStyle(label); t.firstChild.style.font=cs.font; t.firstChild.style.color=cs.color}
+        o.appendChild(t);
+        const ck=document.createElement('span'); ck.className='dd-ck'; ck.textContent=on?'✓':''; o.appendChild(ck);
+        o.addEventListener('click',e=>{e.stopPropagation();onPick(k);close();selEl.focus()});
+        dd.appendChild(o);
+      });
+    }
+    function open(){closeAll();build();dd.classList.add('open');selEl.classList.add('dd-open');selEl.setAttribute('aria-expanded','true');const o=dd.querySelector('.on')||dd.firstChild;o&&o.focus()}
+    function close(){dd.classList.remove('open');selEl.classList.remove('dd-open');selEl.setAttribute('aria-expanded','false')}
+    selEl.addEventListener('click',e=>{e.stopPropagation();dd.classList.contains('open')?close():open()});
+    selEl.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '||e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();open()}});
+    dd.addEventListener('keydown',e=>{const os=[...dd.children],i=os.indexOf(document.activeElement);
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();os[(i+(e.key==='ArrowDown'?1:os.length-1))%os.length].focus()}
+      else if(e.key==='Escape'){close();selEl.focus()} e.stopPropagation()});
+    closers.push(close);
+  }
+  const closers=[], closeAll=()=>closers.forEach(c=>c());
+  m.addEventListener('click',closeAll);
+  dropdown(ns,()=>NETS.map(N=>({g:N.g,label:N.n,sub:N.t.join(' · ')})),()=>ni,k=>{ni=k;ti=Math.min(ti,NETS[ni].t.length-1);paint()});
+  dropdown(ts,()=>NETS[ni].t.map(T=>({g:GLYPH[T],label:T,sub:TOKEN_NAME[T]})),()=>ti,k=>{ti=k;paint()});
   const cp=m.querySelector('[data-pencil-name="Copy"]');
   if(cp){cp.classList.add('hot');cp.addEventListener('click',e=>{e.stopPropagation();const l=txt(cp,'L');
     try{navigator.clipboard&&navigator.clipboard.writeText(addr?addr.textContent:'')}catch(err){}
