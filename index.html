@@ -173,10 +173,8 @@ body.m #stage{box-shadow:0 0 0 1px #2b2926,0 30px 80px rgba(0,0,0,.5)}
 /* ---------- STARBAGS hero: rippling siren rings ---------- */
 [data-pencil-name="Siren rings"]{clip-path:inset(0)}
 .ripples{position:absolute;left:0;top:0;z-index:0;pointer-events:none}
-[data-pencil-name="Siren rings"]>[data-pencil-name^="Ring "]{transform-origin:center;animation:swell 6s ease-in-out infinite}
-[data-pencil-name="Ring 900"]{animation-delay:.5s!important}
-[data-pencil-name="Ring 1180"]{animation-delay:1s!important}
-@keyframes swell{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.035);filter:brightness(1.35)}}
+/* the moving rings replace the three still ones; reduced motion keeps the still design */
+.has-ripples>[data-pencil-name^="Ring "]{visibility:hidden}
 
 #dock{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;width:min(760px,calc(100vw - 24px));
   background:var(--dock-bg);color:var(--dock-fg);border:1px solid var(--dock-line);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);font-family:var(--sans);padding:12px 14px;display:grid;gap:10px}
@@ -217,7 +215,7 @@ body.dock-off #dockShow{opacity:1;transform:none;pointer-events:auto}
 #toast{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translate(-50%,-140%);z-index:70;background:var(--dock-bg);color:var(--dock-fg);border:1px solid var(--dock-line);font:600 13px var(--sans);padding:10px 16px;border-radius:10px;transition:transform .35s cubic-bezier(.2,1.2,.4,1);max-width:calc(100vw - 32px)}
 #toast.on{transform:translate(-50%,0)}
 @media (max-width:560px){.lv .th{display:none}#row{flex-wrap:wrap;gap:6px}#hint{flex-basis:100%;font-size:12.5px}#dock{padding:10px 10px;gap:8px}.btn{padding:7px 8px;font-size:11px}.btn .kbd{display:none}.btn.ghost{padding-inline:6px}}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.ripples{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.ripples{display:none}.has-ripples>[data-pencil-name^="Ring "]{visibility:visible}}
 </style>
 
 <div id="stage">
@@ -14956,24 +14954,28 @@ document.querySelectorAll('.screen').forEach(screen=>{
       window.scrollTo({top:t?Math.max(0,t.getBoundingClientRect().top+scrollY-24):0,behavior:'smooth'})})});
 });
 
-/* STARBAGS hero: rings keep rippling out from the siren behind the three designed bands */
+/* STARBAGS hero: the siren rings themselves ripple outward forever. Each band keeps the designed look:
+   thickness about 14% of its radius, #00754A, most opaque near the middle and fading as it grows.
+   Spacing matches the design (rings at r 320, 450, 590), so any frame reads like the still. */
 document.querySelectorAll('[data-pencil-name="Siren rings"]').forEach(box=>{
-  const NS='http://www.w3.org/2000/svg', W=box.offsetWidth||1440, H=box.offsetHeight||820;
+  const NS='http://www.w3.org/2000/svg';
   const ring=[...box.children].find(c=>/^Ring /.test(c.dataset.pencilName||'')), cs=ring&&ring.style;
   const cx=cs?parseFloat(cs.left)+parseFloat(cs.width)/2:720, cy=cs?parseFloat(cs.top)+parseFloat(cs.height)/2:470;
+  const R0=40, R1=1000, N=7, T=14;                       /* spawn and end radius, rings in flight, seconds per ring */
+  const at=r=>((r-R0)/(R1-R0)).toFixed(3);
   const svg=document.createElementNS(NS,'svg'); svg.setAttribute('class','ripples'); svg.setAttribute('aria-hidden','true');
-  svg.setAttribute('width',1440); svg.setAttribute('height',820); svg.setAttribute('viewBox','0 0 1440 820');
-  for(let i=0;i<5;i++){
-    const t={dur:'12s',begin:(-2.4*i)+'s',repeatCount:'indefinite'};
-    const g=document.createElementNS(NS,'g'); g.setAttribute('opacity','0');
-    const op=document.createElementNS(NS,'animate'); Object.entries(Object.assign({attributeName:'opacity',values:'0;.9;.35;0',keyTimes:'0;.1;.7;1'},t)).forEach(([k,v])=>op.setAttribute(k,v)); g.appendChild(op);
-    [[38,'.12'],[2,'.6']].forEach(([w,o])=>{const c=document.createElementNS(NS,'circle');
-      Object.entries({cx,cy,r:42,fill:'none',stroke:'#00754A','stroke-opacity':o,'stroke-width':w}).forEach(([k,v])=>c.setAttribute(k,v));
-      const a=document.createElementNS(NS,'animate'); Object.entries(Object.assign({attributeName:'r',values:'42;875',calcMode:'spline',keyTimes:'0;1',keySplines:'.22 .55 .35 1'},t)).forEach(([k,v])=>a.setAttribute(k,v));
-      c.appendChild(a); g.appendChild(c)});
-    svg.appendChild(g);
+  svg.setAttribute('width',box.offsetWidth||1440); svg.setAttribute('height',box.offsetHeight||820);
+  for(let i=0;i<N;i++){
+    const c=document.createElementNS(NS,'circle');
+    Object.entries({cx,cy,r:R0,fill:'none',stroke:'#00754A','stroke-opacity':0}).forEach(([k,v])=>c.setAttribute(k,v));
+    const t={dur:T+'s',begin:(-T*i/N).toFixed(2)+'s',repeatCount:'indefinite'};
+    [{attributeName:'r',values:R0+';'+R1},
+     {attributeName:'stroke-width',values:(R0*.14)+';'+(R1*.14)},
+     {attributeName:'stroke-opacity',values:'0;.3;.29;.18;0',keyTimes:'0;'+at(240)+';'+at(320)+';'+at(590)+';1'}]
+      .forEach(a=>{const el=document.createElementNS(NS,'animate');Object.entries(Object.assign(a,t)).forEach(([k,v])=>el.setAttribute(k,v));c.appendChild(el)});
+    svg.appendChild(c);
   }
-  box.prepend(svg);
+  box.prepend(svg); box.classList.add('has-ripples');
 });
 
 /* nav: give inactive tabs the active tab's underline width (transparent) so labels line up */
