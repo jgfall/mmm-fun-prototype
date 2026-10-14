@@ -45,7 +45,7 @@ Every screen is a top-level frame. Names start with the step number and level.
 | **Level 1 · McD (McDoughnald's)** | 01 First Visit (Empty), 02 Add USDC, 03 Place First Order, 04 Order Confirmed, 05 Home (Authed · $62.47) |
 | **Promotions** | 06 Level Up → STARBAGS, Level Up → SWEETGREED · $1,000, Level Up → CARBONUS · $10,000, Level Up → NOBULL · $100,000 |
 | **Level homes** | 07 STARBAGS ($486.20), 08 SWEETGREED ($4,812.55), 09 CARBONUS ($38,450), 10 NOBULL ($128,940) |
-| **Mobile** | A `Mobile · …` version of each screen above, at 390 wide |
+| **Mobile** | A `Mobile · …` version of each screen above, at 390 wide. Mobile follows the desktop rules: crypto-only Add USDC sheet, search on every home, the same portfolio cards, and NOBULL in Direction C. |
 | **mmm.supply** | The side-scrolling merch lander |
 | **Boards** | `NOBULL · Layout explorations` has directions A The Statement, B Private Terminal, C The Menu and C Search “tun”. Direction C is the chosen NOBULL direction. `Level search · “tun” results` shows the search results state for McD, STARBAGS, SWEETGREED and CARBONUS. |
 
@@ -187,22 +187,34 @@ Interactive prototype of the Mmmmmm.fun flow, built from HTML exports of the des
 
 ### What's in it
 
-- **Level 1 · McDoughnald's:** First visit, then the Load FLY sheet, first order, printed receipt (three.js paper print and tear), and the authed home.
-- **Promotions** to STARBAGS ($100), SWEETGREED ($1K), CARBONUS ($10K) and NOBULL ($100K), each with its own home.
+- **Level 1 · McDoughnald's:** First visit, the crypto-only Add USDC sheet (tap the network or token to switch, copy the address), first order, printed receipt (three.js paper print and tear, punches stamped in), and the authed home.
+- **Promotions** to STARBAGS ($100), SWEETGREED ($1K), CARBONUS ($10K) and NOBULL ($100K), each with its own home. NOBULL is Direction C, The Menu.
+- **Search the menu** on every home. Type, for example "tun", to get that level's results dropdown; arrow keys move, Enter picks, Esc closes. `⌘K` or `/` focuses it.
+- **Order details** start collapsed on every level except STARBAGS; tap the row to open or close them. Mobile sections with a chevron collapse too.
+- **STARBAGS** hero rings ripple out from the siren.
 - **mmm.supply:** The side-scrolling clothesline merch lander, driven by wheel, drag or arrow keys.
-- **A demo dock** to step through levels. Use `←` and `→` to move, and `H` to hide it.
+- **Desktop and mobile.** Phones get the mobile screens; anywhere else, switch with the dock button or `M`. Both walk the same steps, so switching keeps your place. Mobile sheets rise from the bottom and the tab bar sticks.
+- **A demo dock** to step through levels. Use `←` and `→` to move, `H` to hide it.
+- **Deep links:** `#step=6&mode=m` opens step 6 (STARBAGS) in the mobile layout. Steps count from 0.
 
-The page loads three.js r128 and html2canvas 1.4.1 from cdnjs. Everything else is inline.
+The page loads three.js r128 and html2canvas 1.4.1 from cdnjs and Google Fonts. Everything else, including images and the PP Editorial New files for NOBULL, is inline.
 
 ### Rebuilding it from the design
 
-`index.html` was built from an earlier version of the design. It doesn't yet include the search, collapsed order details, the light STARBAGS body or the NOBULL Direction C layout. To rebuild:
+1. **Export HTML from Pencil** (`html-css`, with layer IDs) into one folder, one file per frame:
 
-1. **Export HTML from Pencil** (`html-css`) for each screen and modal into one folder:
-   - **Screens:** `p01`, `p03`, `p05`, `p07`, `p08`, `p09`, `p10` and `supply`.
-   - **Modals:** `m_load`, `m_receipt`, `m_l2`, `m_l3`, `m_l4` and `m_l5`.
-2. **Point the build at that folder** by setting `SRC` at the top of `src/build.py`.
-3. **Check the modal frame IDs** in the `modals` list of `build.py`. Each must match the current design file.
-4. **Add any new images** to `src/assets/` as compressed `.webp`.
-5. **Build.** Run `cd src && python3 build.py`, which needs `beautifulsoup4` and `lxml`. Copy the resulting `mmm-fun-level-up.html` to `index.html`.
-6. **Open `index.html` locally,** step through every level with the demo dock, then commit. Vercel deploys from `main`.
+   | File | Frame |
+   |---|---|
+   | `p01` `p02` `p03` `p04` `p05` `p06` | 01 to 06 McD (02 holds the Add USDC sheet, 04 the receipt, 06 the STARBAGS promotion) |
+   | `p07` `p08` `p09` | 07 to 09 level homes |
+   | `p07u` `p08u` `p09u` | Level Up → SWEETGREED, CARBONUS, NOBULL |
+   | `p10` `p10s` | `C · NOBULL Home · The Menu` and its `Search “tun”` state |
+   | `s05` `s07` `s08` `s09` | The four `Search “tun”` frames on the Level search board |
+   | `supply` | mmm.supply |
+   | `mp01` … `mp10`, `mp07u` `mp08u` `mp09u` | The matching `Mobile · …` frames |
+   | `p01x` `p03x` `p05x` `p08x` `p09x`, `mp01x` `mp03x` `mp05x` `mp08x` `mp09x` | The same frames with their `Order Summary` rows switched on. Collapsed rows aren't exported, so export a temporary copy with them enabled, then delete the copy. |
+
+   The build finds sheets, buttons and search results by layer name, not ID, so keep names like `Swap CTA`, `Sent CTA`, `Enter`, `Menu search`, `Search results`, `Order Summary` and `Collapse Header` when you edit.
+2. **Add any new images** to `src/assets/` as compressed `.webp`. Images generated in Pencil (`design/images/…`) go in as `img-<name>.webp`, because their names clash with the token cutouts.
+3. **Build.** Run `python3 src/build.py <export-folder>`, which needs `beautifulsoup4` and `lxml`. It writes `src/mmm-fun-level-up.html` and lists any image it couldn't resolve. Copy it to `index.html`.
+4. **Open `index.html` locally,** step through every level in both layouts with the demo dock, then commit. Vercel deploys from `main`.
