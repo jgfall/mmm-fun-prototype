@@ -2,3 +2,4 @@
 .DS_Store
 __pycache__/
 src/mmm-fun-level-up.html
+.env*
