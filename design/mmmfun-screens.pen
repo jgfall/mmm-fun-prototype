@@ -27521,15 +27521,15 @@
               "children": [
                 {
                   "type": "rectangle",
-                  "id": "HmgeL",
+                  "id": "SJpvj",
                   "fill": {
                     "type": "image",
                     "enabled": true,
-                    "url": "images/starbags-light.png",
+                    "url": "images/image-1.png",
                     "mode": "cover"
                   },
-                  "width": 67,
-                  "height": 67
+                  "width": 66,
+                  "height": 66
                 },
                 {
                   "type": "frame",
