@@ -16,7 +16,8 @@ The design file is the source of truth. The prototype is a snapshot built from i
 | `design/mmmfun-screens.pen` | The Pencil design file. Open it directly from here. |
 | `design/assets/` | Images the design references, such as token cutouts, logos and merch art. |
 | `design/images/` | Images generated inside Pencil, such as the NOBULL backdrop, tuna cutouts and STARBAGS light art. |
-| `design/fonts/` | Local-only licensed fonts. Gitignored, see [Fonts](#fonts). |
+| `design/assets/remote/` | Local copies of images the design used to load from the web, such as Unsplash. |
+| `design/fonts/` | Google Fonts TTFs, committed. Licensed Pangram fonts are gitignored. See [Fonts](#fonts). |
 | `design/previews/` | PNG snapshots of key screens for quick review without Pencil. |
 | `scripts/sync_design.py` | Copies a Pencil working file into `design/` and makes its asset paths portable. |
 | `index.html` | The built, self-contained prototype, deployed to Vercel as-is. |
@@ -109,15 +110,24 @@ These are product and design decisions that have already been made. Follow them 
 
 - **Adding an image:** Put the file under `design/assets/`, or `design/images/` for generated art. Reference it relative to the `.pen` file, for example `assets/MMM-assets/generated-5.webp`. Images generated inside Pencil land in `design/images/` automatically when you work on the repo copy.
 - **Token cutouts** are in `design/assets/MMM-assets/` as `generated*.webp`. Reuse them rather than adding new versions.
-- **One remote image** in mmm.supply loads from Unsplash. Everything else is local.
+- **Remote images** are downloaded into `design/assets/remote/` by the sync script, so the file loads nothing from the web. The mmm.supply sky photo is from Unsplash.
 
 ### Fonts
 
-Most fonts are Google Fonts, so Pencil loads them automatically: Archivo, Archivo Black, Anton, Yellowtail, Fraunces, Nunito Sans, Lora, Instrument Sans, Oswald, Libre Baskerville, Inter, Cormorant Garamond and IBM Plex Mono.
+Fonts live in `design/fonts/`.
 
-**PP Editorial New** by Pangram Pangram is commercially licensed. NOBULL Direction C uses it through `font-nobu-serif`. The design file embeds it from `design/fonts/PPEditorialNew-Light.ttf`, but that folder is gitignored because this repo is public. To see it, drop your licensed copy there.
+| Folder | Fonts | In git? |
+|---|---|---|
+| `design/fonts/google/` | Anton, Archivo, Archivo Black, Cormorant Garamond, Fraunces, IBM Plex Mono, Instrument Sans, Inter, Libre Baskerville, Libre Caslon Text, Lora, Nunito Sans, Oswald, Silkscreen, Yellowtail | Yes. These are open-licensed TTFs from Google Fonts, one file per weight and style the design uses. Pencil also loads them by name, so the files are for offline use, the prototype build and handoff. |
+| `design/fonts/PPEditorialNew-Light.ttf` | PP Editorial New Light | No, it's gitignored. It's embedded in the design file and renders the NOBULL Direction C serif (`font-nobu-serif`). |
+| `design/fonts/pangram/` | Editorial New, every weight; PP Editorial Old | No, it's gitignored. These are the rest of the Pangram Pangram family. |
 
-**PP Editorial Old** does not render in Pencil even when it's installed on your system, which is why Direction C uses Editorial New.
+Some fonts can't go in a public repo:
+
+- **The Pangram Pangram fonts** are commercially licensed, so they stay out of this public repo. `sync_design.py` copies them from your system font folders into the paths above, so the design renders fully on a machine that has the license. On any other clone, the NOBULL serif falls back to a default face until a licensed copy goes in those paths.
+- **Helvetica Neue** appears once as a system font. It's Apple's, so it isn't redistributable and isn't bundled. macOS has it built in.
+
+**PP Editorial Old** does not render in Pencil by name, even when it's installed on your system, which is why Direction C uses Editorial New. To try Old, add an entry for `fonts/pangram/PPEditorialOld-Ultralight.otf` to the file's `fonts` list, the same way Editorial New Light is embedded. Then set `font-nobu-serif` to "PP Editorial Old".
 
 ---
 
@@ -137,7 +147,7 @@ Before you commit:
 
 1. **Check the result.** Look for clipped text, collapsed layouts and contrast problems. Pencil's layout check, or `Get(screen, (n, c) => c.problems && Print(n.name, c.problems))` through the MCP, finds clipping.
 2. **Refresh previews** for any screen you changed. Export at 0.5× PNG into `design/previews/` and keep the existing file names.
-3. **Run `git status`.** Make sure new images are under `design/` and no font files are staged.
+3. **Run `git status`.** Make sure new images and fonts are under `design/`. If you added a font family, rerun `python3 scripts/sync_design.py "design/mmmfun-screens.pen"` to bundle its files.
 4. **Commit and open a PR** with a sentence on what changed and why.
 
 ```bash
@@ -155,7 +165,14 @@ python3 scripts/sync_design.py                              # default working-co
 python3 scripts/sync_design.py "/path/to/some file.pen"     # or any other .pen
 ```
 
-The script copies every referenced image into `design/`, rewrites the paths, strips the machine-specific `fileToken`, and writes `design/mmmfun-screens.pen`. It lists any files it couldn't find. Fix those before committing, then reopen the repo copy in Pencil and spot-check a few screens.
+The script does the following:
+- **Images:** Copies every referenced image into `design/` and downloads remote images into `design/assets/remote/`.
+- **Paths:** Rewrites every path to be relative to `design/`.
+- **Token:** Strips the machine-specific `fileToken`.
+- **Output:** Writes `design/mmmfun-screens.pen`.
+- **Fonts:** Bundles every font family the file uses. It downloads Google Fonts TTFs and copies the licensed Pangram files from your system font folders. Edit `LOCAL_FONTS` in the script if you add another non-Google family.
+
+It lists anything it couldn't find, and you need to fix those before committing. Add `--no-fonts` to skip the font step. Afterwards, reopen the repo copy in Pencil and spot-check a few screens.
 
 ### Working with an AI agent
 

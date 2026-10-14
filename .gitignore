@@ -1,12 +1,8 @@
 .vercel
 .DS_Store
-
-# Commercially licensed fonts. The design file references design/fonts/,
-# but the files themselves must not be published. See README > Fonts.
-design/fonts/
-*.ttf
-*.otf
-*.woff
-*.woff2
-
 __pycache__/
+
+# Commercially licensed Pangram Pangram fonts stay local (public repo).
+# sync_design.py still copies them here so the design renders on this machine.
+design/fonts/pangram/
+design/fonts/PPEditorialNew-*.ttf
