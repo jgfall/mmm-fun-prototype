@@ -43,7 +43,7 @@ Every screen is a top-level frame. Names start with the step number and level.
 | **Level 1 · McD (McDoughnald's)** | 01 First Visit (Empty), 02 Add USDC, 03 Place First Order, 04 Order Confirmed, 05 Home (Authed · $62.47) |
 | **Promotions** | 06 Level Up → STARBAGS, Level Up → SWEETGREED · $1,000, Level Up → CARBONUS · $10,000, Level Up → NOBULL · $100,000 |
 | **Level homes** | 07 STARBAGS ($486.20), 08 SWEETGREED ($4,812.55), 09 CARBONUS ($38,450), 10 NOBULL ($128,940) |
-| **Mobile** | A `Mobile · …` version of each screen above, at 390 wide |
+| **Mobile** | A `Mobile · …` version of each screen above, at 390 wide. Mobile follows the desktop rules: crypto-only Add USDC sheet, search on every home, the same portfolio cards, and NOBULL in Direction C. |
 | **mmm.supply** | The side-scrolling merch lander |
 | **Boards** | `NOBULL · Layout explorations` has directions A The Statement, B Private Terminal, C The Menu and C Search “tun”. Direction C is the chosen NOBULL direction. `Level search · “tun” results` shows the search results state for McD, STARBAGS, SWEETGREED and CARBONUS. `McD · Launch a Token · v2 · 5 takes` explores the flow behind the **Launch a Token** button. No take has been picked yet. |
 
@@ -189,31 +189,36 @@ Pencil runs an MCP server while the app is open, so an agent such as Claude Code
 
 ### What's in it
 
-- **Level 1 · McDoughnald's:** First visit, then the Load FLY sheet, first order, printed receipt (three.js paper print and tear), and the authed home.
-- **Promotions** to STARBAGS ($100), SWEETGREED ($1K), CARBONUS ($10K) and NOBULL ($100K), each with its own home.
+- **Level 1 · McDoughnald's:** First visit, the crypto-only Add USDC sheet (tap the network or token to switch, copy the address), first order, printed receipt (three.js paper print and tear, punches stamped in), and the authed home.
+- **Promotions** to STARBAGS ($100), SWEETGREED ($1K), CARBONUS ($10K) and NOBULL ($100K), each with its own home. NOBULL is Direction C, The Menu.
+- **Search the menu** on every home. Type, for example "tun", to get that level's results dropdown; arrow keys move, Enter picks, Esc closes. `⌘K` or `/` focuses it.
+- **Order details** start collapsed on every level except STARBAGS; tap the row to open or close them. Mobile sections with a chevron collapse too.
+- **STARBAGS** hero rings ripple out from the siren.
 - **mmm.supply:** The side-scrolling clothesline merch lander, driven by wheel, drag or arrow keys.
-- **A demo dock** to step through levels. Use `←` and `→` to move, and `H` to hide it.
+- **Desktop and mobile.** Phones get the mobile screens; anywhere else, switch with the dock button or `M`. Both walk the same steps, so switching keeps your place. Mobile sheets rise from the bottom and the tab bar sticks.
+- **A demo dock** to step through levels. Use `←` and `→` to move, `H` to hide it.
+- **Deep links:** `#step=6&mode=m` opens step 6 (STARBAGS) in the mobile layout. Steps count from 0.
 
-The page loads three.js r128 and html2canvas 1.4.1 from cdnjs, and its fonts from Google Fonts. Everything else is in the file.
+The page loads three.js r128 and html2canvas 1.4.1 from cdnjs and Google Fonts. Everything else, including images and the PP Editorial New files for NOBULL, is inline.
 
 ### How `index.html` maps to the design
 
-`index.html` is the whole prototype: plain HTML, CSS and one script, with no build step. Its markup mirrors the design file's node tree, which is what lets an agent move changes from one to the other.
+`index.html` is the whole prototype: plain HTML, CSS and one script. Its markup mirrors the design file's node tree, which is what lets an agent move changes from one to the other.
 
 - **Screens and sheets:**
-  - **Screens:** Each screen is a `<div class="screen" data-screen="p05">`. The values are `p01`, `p03`, `p05`, `p07`, `p08`, `p09`, `p10` and `supply`.
-  - **Sheets:** Each sheet is a `<div class="modal" data-modal="m_load">`. The values are `m_load`, `m_receipt`, and `m_l2` to `m_l5` for the promotions.
+  - **Screens:** Each screen is a `<div class="screen" data-screen="p05" data-mode="d">`. Desktop screens are `p01`, `p03`, `p05`, `p07`, `p08`, `p09`, `p10` and `supply`; mobile screens are `mp01`, `mp03`, `mp05`, `mp07`, `mp08`, `mp09` and `mp10`.
+  - **Sheets:** Each sheet is a `<div class="modal" data-modal="m_load">`. Desktop: `m_load`, `m_receipt`, and `m_l2` to `m_l5` for the promotions. Mobile bottom sheets use the same names with `mm_`.
 - **Elements:**
   - **`data-pencil-id`:** Elements carry the ID of the design node they came from. Search `index.html` for a node ID to find its markup.
-  - **`data-pencil-name`:** Elements also carry the layer name. Some animations select by name, for example `Price Sticker`, so renaming those layers in Pencil means updating the script too.
-- **Images:** Older images are inlined as base64 CSS variables named `--im-<file name>`. New images can simply point at files under `design/`, for example `design/images/generated-6.webp`, because Vercel serves the whole repo.
-- **The flow:** The `STEPS` array at the top of the script drives the demo dock. Each entry has these fields:
-  - `s`: the screen.
-  - `m`: an optional sheet.
+  - **`data-pencil-name`:** Elements also carry the layer name. The script finds buttons, search fields, results and collapsible headers by layer name (`Swap CTA`, `Sent CTA`, `Enter`, `Menu search`, `Search results`, `Order Summary`, `Collapse Header`, `Price Sticker`…), so renaming those layers in Pencil means updating the script too. mmm.supply still selects by node ID.
+- **Images:** Images are inlined as base64 CSS variables named `--im-<file name>`; images generated in Pencil use `--im-img<file name>`. New images can also point at files under `design/`, because Vercel serves the whole repo.
+- **The flow:** The `FLOW` array at the top of the script drives the demo dock, once for both layouts. Each entry has these fields:
+  - `d` and `m`: the desktop and mobile screen.
+  - `sheet` (optional): the sheet, without its `m_`/`mm_` prefix.
   - `lv`: the level.
   - `k` and `h`: the dock caption and hint.
-  - `t`: the node IDs that advance the flow when tapped.
-  - `count` (optional): animates the portfolio value.
+  - `t`: the layer names that advance the flow when tapped, or `{d:[…], m:[…]}` when they differ.
+  - `count` (optional): animates the portfolio value from, to.
 
   `LVSTART` maps each level to its first step.
 
@@ -224,11 +229,33 @@ Treat this like any other change to the page. An agent reads the design over MCP
 1. **Open both.** Open `design/mmmfun-screens.pen` in Pencil, and start the agent in this repo with the Pencil MCP connected.
 2. **Say what changed.** Name the frames, for example "05 · McD · Home: the search field and collapsed order details". Also say what the prototype should do with them.
 3. **The agent reads the design.** It uses `Get(frameId, {depth: 4, resolveVariables: true})` for structure, text, sizes and resolved colors, and `GetVariables()` for tokens. It takes a `TakeScreenshot([frameId])` to see the target.
-4. **The agent edits `index.html`.** It finds the markup by `data-screen` or `data-pencil-id`, and updates the HTML and CSS to match. New elements keep the node's `data-pencil-id` and `data-pencil-name`, so the next update can find them.
+4. **The agent edits `index.html`.** It finds the markup by `data-screen` or `data-pencil-id`, and updates the HTML and CSS to match. New elements keep the node's `data-pencil-id` and `data-pencil-name`, so the next update can find them. Change the mobile screen too when the desktop one changes.
 5. **New screens or sheets:**
    - **Markup:** Add a `screen` or `modal` div.
-   - **Flow:** Add a `STEPS` entry whose `t` lists the tap targets, and adjust `LVSTART` if the level boundaries move.
-6. **Check it in a browser.** Open `index.html` locally, step through every level with the dock, and compare each changed state against the Pencil screenshot.
+   - **Flow:** Add a `FLOW` entry whose `t` lists the tap targets, and adjust `LVSTART` if the level boundaries move.
+6. **Check it in a browser.** Open `index.html` locally, step through every level in both layouts with the dock (`M` switches), and compare each changed state against the Pencil screenshot.
 7. **Ship it.** Commit on a branch and open a PR. Vercel deploys from `main`.
 
-The prototype is currently behind the design. It doesn't yet include the search, collapsed order details, the light STARBAGS body, the NOBULL Direction C layout or any launch-token flow.
+The launch-token flow isn't in the prototype yet.
+
+### Full rebuild from HTML exports (optional)
+
+For a wholesale refresh, `src/build.py` regenerates the page from Pencil HTML exports and `src/shell.html`, which holds the interaction script. If you have edited `index.html` by hand since, carry those edits into `src/shell.html` first, or they will be lost.
+
+1. **Export HTML from Pencil** (`html-css`, with layer IDs) into one folder, one file per frame:
+
+   | File | Frame |
+   |---|---|
+   | `p01` `p02` `p03` `p04` `p05` `p06` | 01 to 06 McD (02 holds the Add USDC sheet, 04 the receipt, 06 the STARBAGS promotion) |
+   | `p07` `p08` `p09` | 07 to 09 level homes |
+   | `p07u` `p08u` `p09u` | Level Up → SWEETGREED, CARBONUS, NOBULL |
+   | `p10` `p10s` | `C · NOBULL Home · The Menu` and its `Search “tun”` state |
+   | `s05` `s07` `s08` `s09` | The four `Search “tun”` frames on the Level search board |
+   | `supply` | mmm.supply |
+   | `mp01` … `mp10`, `mp07u` `mp08u` `mp09u` | The matching `Mobile · …` frames |
+   | `p01x` `p03x` `p05x` `p08x` `p09x`, `mp01x` `mp03x` `mp05x` `mp08x` `mp09x` | The same frames with their `Order Summary` rows switched on. Collapsed rows aren't exported, so export a temporary copy with them enabled, then delete the copy. |
+
+   The build finds sheets, buttons and search results by layer name, not ID, so keep names like `Swap CTA`, `Sent CTA`, `Enter`, `Menu search`, `Search results`, `Order Summary` and `Collapse Header` when you edit.
+2. **Add any new images** to `src/assets/` as compressed `.webp`. Images generated in Pencil (`design/images/…`) go in as `img-<name>.webp`, because their names clash with the token cutouts.
+3. **Build.** Run `python3 src/build.py <export-folder>`, which needs `beautifulsoup4` and `lxml`. It writes `src/mmm-fun-level-up.html` and lists any image it couldn't resolve. Copy it to `index.html`.
+4. **Open `index.html` locally,** step through every level in both layouts with the demo dock, then commit. Vercel deploys from `main`.
