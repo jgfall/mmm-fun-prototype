@@ -158,6 +158,17 @@ body.m #stage{box-shadow:0 0 0 1px #2b2926,0 30px 80px rgba(0,0,0,.5)}
 .dd-chev{transition:rotate .2s ease}
 .dd-open .dd-chev{rotate:180deg}
 [data-pencil-name="Select"].dd-open{box-shadow:0 0 0 3px #FFBC0D}
+/* ---------- everything clickable feels clickable ---------- */
+.tap{cursor:pointer;transition:transform .12s ease,filter .15s ease}
+.tap:hover{filter:brightness(1.06)}
+.tap:active{transform:scale(.97)}
+.seg-item{cursor:pointer}
+.chip-off{background-color:#fff!important;box-shadow:inset 0 0 0 1.5px var(--chip)!important}
+.chip-off *{color:var(--chip)!important}
+[data-amt]{cursor:text;outline:none;border-radius:6px;transition:box-shadow .15s}
+[data-amt]:hover{box-shadow:0 0 0 2px rgba(0,0,0,.08)}
+[data-amt]:focus{box-shadow:0 0 0 2px currentColor}
+.flipped{rotate:180deg;transition:rotate .3s cubic-bezier(.3,1.5,.5,1)}
 /* ---------- collapsible sections ---------- */
 [data-pencil-name="Collapse Header"],.ct-head{cursor:pointer;user-select:none}
 .ct-icon{transition:rotate .25s ease}
@@ -534,7 +545,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 })));
 /* misclick on a screen or modal: nudge toward the right control */
 function nudge(){const s=STEPS[cur];if(!s.t.length)return;const el=byName(s.m?mod(s.m):scr(s.s),s.t[0])[0];if(!el)return;if(!s.m)el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse')}
-const QUIET='[data-pencil-name="Menu search"],.ms-drop,.dd,[data-pencil-name="Collapse Header"],.ct-head,.navlink,[data-pencil-name="Select"],[data-pencil-name="Copy"],[data-pencil-name="Close"]';
+const QUIET='[data-pencil-name="Menu search"],.ms-drop,.dd,.tap,.seg-item,[data-amt],[data-pencil-name="Collapse Header"],.ct-head,.navlink,[data-pencil-name="Select"],[data-pencil-name="Copy"],[data-pencil-name="Close"]';
 document.getElementById('stage').addEventListener('click',e=>{if(!STEPS[cur].m&&!e.target.closest(QUIET))nudge()});
 document.getElementById('modalWrap').addEventListener('click',e=>{if(!e.target.closest('.hot')&&!e.target.closest(QUIET))nudge()});
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay'&&/^mm?_load$/.test(STEPS[cur].m))go(0)});
@@ -683,6 +694,104 @@ HEADS.forEach(h=>{
   h.classList.add('ct-head'); h.setAttribute('role','button'); h.tabIndex=0; set(open);
   const flip=e=>{e.stopPropagation();set(!open);requestAnimationFrame(fit)};
   h.addEventListener('click',flip); h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip(e)}});
+});
+
+/* ---------- Segmented controls: Buy/Sell/Swap, amount chips, ranges, tabs, nav. A group is a row of short items
+   where exactly one looks different (the selected one); a "Super size"/"Max" chip keeps its own look and shows outlined until picked. */
+const SIZE_PROPS=/^(width|height|min-width|max-width|min-height|flex|flex-grow|flex-shrink|flex-basis|left|top|right|bottom|position|transform|rotate)$/;
+const parseSt=s=>{const m=new Map();(s||'').split(';').forEach(d=>{const i=d.indexOf(':');if(i>0)m.set(d.slice(0,i).trim(),d.slice(i+1).trim())});return m};
+const looks=e=>[e,...e.querySelectorAll('*')].map(n=>[...parseSt(n.getAttribute('style'))].filter(([k])=>!SIZE_PROPS.test(k)).map(x=>x.join(':')).join(';')).join('|');
+function restyle(target,from){
+  const ts=[target,...target.querySelectorAll('*')], fs=[from,...from.querySelectorAll('*')], same=ts.length===fs.length;
+  (same?ts:[target]).forEach((n,k)=>{const own=parseSt(n.dataset.st0??(n.dataset.st0=n.getAttribute('style')||'')), src=parseSt(fs[k].dataset.st0??fs[k].getAttribute('style'));
+    const out=new Map([...own].filter(([p])=>SIZE_PROPS.test(p))); src.forEach((v,p)=>{if(!SIZE_PROPS.test(p))out.set(p,v)});
+    n.setAttribute('style',[...out].map(x=>x.join(': ')).join('; '))});
+}
+document.querySelectorAll('.screen [data-pencil-name]').forEach(row=>{
+  if(/Labels|Stamps|Track|Marks|Punch|Progress|Plot|Chart/i.test(row.dataset.pencilName)) return;
+  const kids=[...row.children]; if(kids.length<3||kids.length>8) return;
+  if(!kids.every(k=>k.dataset&&k.dataset.pencilName&&k.textContent.trim().length<=18&&!k.querySelector('[style*="background-image"],img')&&!/background-image/.test(k.getAttribute('style')||''))) return;
+  const sig=kids.map(looks), cnt={}; sig.forEach(s=>cnt[s]=(cnt[s]||0)+1);
+  const major=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]; if(cnt[major]<2) return;
+  const odd=kids.filter((k,i)=>sig[i]!==major), special=odd.filter(k=>/super|max/i.test(k.dataset.pencilName+k.textContent));
+  const sel=odd.filter(k=>!special.includes(k)); if(sel.length>1||(!sel.length&&!special.length)) return;
+  /* chip rows drawn with nothing selected borrow the McD yellow for their selected look */
+  const OFF=kids[sig.indexOf(major)].cloneNode(true), ON=sel[0]?sel[0].cloneNode(true):(()=>{const c=OFF.cloneNode(true);c.style.backgroundColor='#FFBC0D';return c})();
+  [ON,OFF].forEach(c=>[c,...c.querySelectorAll('*')].forEach(n=>n.dataset.st0=n.getAttribute('style')||''));
+  const bgOf=k=>(parseSt(k.getAttribute('style')).get('background-color')||'#DA291C');
+  special.forEach(k=>k.style.setProperty('--chip',bgOf(k)));
+  let cur=sel[0]||null;
+  function select(item){
+    cur=item; kids.forEach(k=>{
+      if(special.includes(k)) k.classList.toggle('chip-off',k!==item);
+      else restyle(k,k===item?ON:OFF);
+      k.setAttribute('aria-pressed',k===item);});
+  }
+  kids.forEach(k=>{k.classList.add('seg-item');k.setAttribute('role','button');k.tabIndex=0;
+    k.addEventListener('click',e=>{if(!k.classList.contains('hot'))e.stopPropagation();select(k);row.dispatchEvent(new CustomEvent('seg',{detail:k}))});
+    k.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();k.click()}})});
+  row._seg={select,items:kids,get cur(){return cur}};
+  select(cur);
+});
+
+/* ---------- Order cards: type an amount, or pick a chip, and the receive amount and the button follow ---------- */
+const num=t=>parseFloat(String(t).replace(/[^\d.]/g,''))||0;
+const fmtLike=(orig,v)=>{const dec=(orig.split('.')[1]||'').length;return v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec,useGrouping:orig.includes(',')||v>=10000})};
+const leaves=root=>[...root.querySelectorAll('*')].filter(e=>!e.children.length&&e.textContent.trim());
+document.querySelectorAll('.screen').forEach(screen=>{
+  screen.querySelectorAll('[data-pencil-name]').forEach(pay=>{
+    if(!/^you pay$/i.test(pay.dataset.pencilName)) return;
+    let panel=pay.parentElement; while(panel&&panel!==screen&&!/^you (get|receive)$/i.test([...panel.querySelectorAll('[data-pencil-name]')].map(e=>e.dataset.pencilName).join('\n').match(/^you (get|receive)$/im)?.[0]||'')) panel=panel.parentElement;
+    if(!panel||panel===screen) return;
+    const get=[...panel.querySelectorAll('[data-pencil-name]')].find(e=>/^you (get|receive)$/i.test(e.dataset.pencilName));
+    const big=box=>leaves(box).filter(e=>/^[\d,.]+$/.test(e.textContent.trim())).sort((a,b)=>parseFloat(getComputedStyle(b).fontSize)-parseFloat(getComputedStyle(a).fontSize)||0)[0];
+    const pa=big(pay), ga=get&&big(get); if(!pa) return;
+    let scope=panel; while(scope.parentElement&&scope!==screen&&!/1\s+(USDC|\$\w+)\s+[=≈]/.test(scope.textContent)) scope=scope.parentElement;   /* NOBULL keeps its rate line beside the fields */
+    const all=leaves(scope).map(e=>e.textContent.trim()).join('\n');
+    let perUsdc=null, m;
+    if((m=all.match(/1\s+\$\w+\s+≈\s+\$([\d.]+)/))) perUsdc=1/num(m[1]);          /* exact token price first */
+    else if((m=all.match(/1\s+USDC\s+[=≈]\s+([\d.,]+)\s+\$\w+/))) perUsdc=num(m[1]);
+    const bal=(all.match(/Balance ([\d,.]+)/)||[])[1];
+    const cta=leaves(panel).find(e=>/ USDC$/.test(e.textContent.trim())&&/order|reserve/i.test(e.textContent));
+    const p0=pa.textContent.trim(), g0=ga?ga.textContent.trim():'', c0=cta?cta.textContent.trim():'';
+    const note=leaves(scope).find(e=>/^≈\s*[\d,.]+\s+\$\w+/.test(e.textContent.trim())), n0=note?note.textContent:'';
+    const chips=[...panel.querySelectorAll('[data-pencil-name]')].map(e=>e._seg).filter(s=>s&&s.items.some(k=>/\$\d|super|max/i.test(k.textContent)))[0];
+    function setPay(v,from){
+      if(from!=='type') pa.textContent=fmtLike(p0,v);
+      if(ga&&perUsdc) ga.textContent=fmtLike(g0,v*perUsdc);
+      if(note&&ga&&perUsdc) note.textContent=n0.replace(/[\d,.]+(?=\s+\$)/,fmtLike(g0,v*perUsdc));
+      if(cta) cta.textContent=c0.replace(/[\d,.]+(?= USDC$)/,v.toLocaleString('en-US',{maximumFractionDigits:2}));
+      if(chips&&from!=='chip'){const k=chips.items.find(k=>{const t=k.textContent.trim();return /^\$[\d,.]+$/.test(t)?num(t)===v:bal&&/super|max/i.test(t)&&num(bal)===v});
+        if(k) chips.select(k); else chips.items.forEach(i=>{if(i===chips.cur){chips.select(null)}})}
+    }
+    pa.dataset.amt='1'; pa.contentEditable='true'; pa.inputMode='decimal'; pa.spellcheck=false; pa.setAttribute('role','textbox'); pa.setAttribute('aria-label','You pay');
+    pa.addEventListener('click',e=>e.stopPropagation());
+    pa.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();pa.blur()}else if(e.key.length===1&&!/[\d.,]/.test(e.key)&&!e.metaKey&&!e.ctrlKey)e.preventDefault()});
+    pa.addEventListener('input',()=>setPay(num(pa.textContent),'type'));
+    pa.addEventListener('blur',()=>{pa.textContent=fmtLike(p0,num(pa.textContent))});
+    if(chips){const k=chips.items.find(k=>/^\$[\d,.]+$/.test(k.textContent.trim())&&num(k.textContent)===num(p0)); if(k) chips.select(k)}   /* highlight the chip that matches the amount */
+    if(chips) chips.items[0].parentElement.addEventListener('seg',e=>{const t=e.detail.textContent.trim();
+      const v=/super|max/i.test(t)?(bal?num(bal):null):num(t); if(v!=null) setPay(v,'chip')});
+    /* the place-order button sits at the foot of a card that stretches to the hero's height */
+    for(let b=cta;b&&b.parentElement&&b.parentElement!==screen;b=b.parentElement){const h=b.parentElement;
+      if(getComputedStyle(h).flexDirection==='column'&&/height:\s*(100%|[\d.]+px)/.test(h.getAttribute('style')||'')){b.style.marginTop='auto';break}}
+  });
+});
+
+/* ---------- every other button and field responds, even when it isn't wired to anything ---------- */
+const TAP=/(Btn|Button|CTA|^Add|^Buy|^Order$|Reserve|RESERVE|See all|Explore|Picker|^Token$|^Select$|^Flip$|Arrow|Launch a Token|Avatar|Account|Wallet|^Close$|^Copy$|Bag button|Cook|^Chip|Add to)/;
+document.querySelectorAll('.screen [data-pencil-name],.modal [data-pencil-name]').forEach(el=>{
+  if(!TAP.test(el.dataset.pencilName)||el.classList.contains('hot')||el.classList.contains('seg-item')||el.closest('.ms-drop,.hot,.seg-item,[data-pencil-name="Bag Card"] [data-pencil-name="Value"]')) return;
+  if(el.children.length===0&&!el.textContent.trim()&&!el.querySelector('svg')&&el.tagName!=='svg') return;
+  el.classList.add('tap'); if(!el.getAttribute('role')) el.setAttribute('role','button');
+  el.addEventListener('click',e=>{
+    const n=el.dataset.pencilName;
+    if(/^Flip$|Swap Arrow|^Arrow$/.test(n)){e.stopPropagation();el.classList.toggle('flipped');return}
+    if(/^(Add|Buy|Order|Reserve|RESERVE)|Add to/.test(n)&&!/Buy Btn/.test(n)){e.stopPropagation();
+      let t=el;while(t&&t.parentElement&&!/\$[A-Z]{2,}/.test(t.textContent))t=t.parentElement;
+      const sym=t&&(t.textContent.match(/\$[A-Z]{2,}/)||[])[0];toast((sym||'That one')+' added to your order. Checkout isn’t part of this prototype.');return}
+    if(!el.closest('.hot')) e.stopPropagation();
+  });
 });
 
 /* Nav and tab bars scroll to the matching section on the current screen */
