@@ -784,9 +784,12 @@ document.querySelectorAll('.screen').forEach(screen=>{
     if(chips){const k=chips.items.find(k=>/^\$[\d,.]+$/.test(k.textContent.trim())&&num(k.textContent)===num(p0)); if(k) chips.select(k)}   /* highlight the chip that matches the amount */
     if(chips) chips.items[0].parentElement.addEventListener('seg',e=>{const t=e.detail.textContent.trim();
       const v=/super|max/i.test(t)?(bal?num(bal):null):num(t); if(v!=null) setPay(v,'chip')});
-    /* the place-order button sits at the foot of a card that stretches to the hero's height */
-    for(let b=cta;b&&b.parentElement&&b.parentElement!==screen;b=b.parentElement){const h=b.parentElement;
-      if(getComputedStyle(h).flexDirection==='column'&&/height:\s*(100%|[\d.]+px)/.test(h.getAttribute('style')||'')){b.style.marginTop='auto';break}}
+    /* order cards hug their content (instead of stretching to the hero's height), so they grow and shrink with order details */
+    for(let h=panel;h&&h!==screen;h=h.parentElement){
+      if(getComputedStyle(h).flexDirection==='column'&&/height:\s*(100%|[\d.]+px)/.test(h.getAttribute('style')||'')){h.style.height='auto';h.style.alignSelf='flex-start';h.dataset.hug='1';
+        /* drawn card backgrounds (CARBONUS's ticket stock) stretch with the card */
+        [...h.children].filter(c=>c.tagName==='svg'&&/absolute/.test(c.getAttribute('style')||'')).forEach(c=>{c.style.width='100%';c.style.height='100%';c.setAttribute('preserveAspectRatio','none')});
+        break}}
   });
 });
 
