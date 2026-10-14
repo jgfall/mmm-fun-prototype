@@ -17,7 +17,7 @@ The design file is the source of truth. The prototype is a snapshot built from i
 | `design/assets/` | Images the design references, such as token cutouts, logos and merch art. |
 | `design/images/` | Images generated inside Pencil, such as the NOBULL backdrop, tuna cutouts and STARBAGS light art. |
 | `design/assets/remote/` | Local copies of images the design used to load from the web, such as Unsplash. |
-| `design/fonts/` | Google Fonts TTFs, committed. Licensed Pangram fonts are gitignored. See [Fonts](#fonts). |
+| `design/fonts/` | Every font the design uses: Google Fonts and the Pangram Pangram files. See [Fonts](#fonts). |
 | `design/previews/` | PNG snapshots of key screens for quick review without Pencil. |
 | `scripts/sync_design.py` | Copies a Pencil working file into `design/` and makes its asset paths portable. |
 | `index.html` | The built, self-contained prototype, deployed to Vercel as-is. |
@@ -33,9 +33,8 @@ The design file is the source of truth. The prototype is a snapshot built from i
 
 1. Install the Pencil desktop app and sign in to pen.dev.
 2. Open `design/mmmfun-screens.pen` from your clone of this repo.
-3. If you have the licensed PP Editorial New font, put `PPEditorialNew-Light.ttf` in `design/fonts/` first. Otherwise the NOBULL serif falls back to a default face. See [Fonts](#fonts).
 
-All image paths in the file are relative to `design/`, so it works from any clone location.
+All image and font paths in the file are relative to `design/`, so it works from any clone location without extra setup.
 
 ### What's on the canvas
 
@@ -119,12 +118,12 @@ Fonts live in `design/fonts/`.
 | Folder | Fonts | In git? |
 |---|---|---|
 | `design/fonts/google/` | Anton, Archivo, Archivo Black, Cormorant Garamond, Fraunces, IBM Plex Mono, Instrument Sans, Inter, Libre Baskerville, Libre Caslon Text, Lora, Nunito Sans, Oswald, Silkscreen, Yellowtail | Yes. These are open-licensed TTFs from Google Fonts, one file per weight and style the design uses. Pencil also loads them by name, so the files are for offline use, the prototype build and handoff. |
-| `design/fonts/PPEditorialNew-Light.ttf` | PP Editorial New Light | No, it's gitignored. It's embedded in the design file and renders the NOBULL Direction C serif (`font-nobu-serif`). |
-| `design/fonts/pangram/` | Editorial New, every weight; PP Editorial Old | No, it's gitignored. These are the rest of the Pangram Pangram family. |
+| `design/fonts/PPEditorialNew-Light.ttf` | PP Editorial New Light | Yes. It's embedded in the design file and renders the NOBULL Direction C serif (`font-nobu-serif`). |
+| `design/fonts/pangram/` | Editorial New, every weight; PP Editorial Old | Yes. These are the rest of the Pangram Pangram family, for installing locally and for code. |
 
-Some fonts can't go in a public repo:
+Two notes on licensing:
 
-- **The Pangram Pangram fonts** are commercially licensed, so they stay out of this public repo. `sync_design.py` copies them from your system font folders into the paths above, so the design renders fully on a machine that has the license. On any other clone, the NOBULL serif falls back to a default face until a licensed copy goes in those paths.
+- **The Pangram Pangram fonts** are commercially licensed. The repo owner has permitted publishing them here. `sync_design.py` refreshes them from your system font folders when you sync.
 - **Helvetica Neue** appears once as a system font. It's Apple's, so it isn't redistributable and isn't bundled. macOS has it built in.
 
 **PP Editorial Old** does not render in Pencil by name, even when it's installed on your system, which is why Direction C uses Editorial New. To try Old, add an entry for `fonts/pangram/PPEditorialOld-Ultralight.otf` to the file's `fonts` list, the same way Editorial New Light is embedded. Then set `font-nobu-serif` to "PP Editorial Old".
