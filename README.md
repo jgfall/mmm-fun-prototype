@@ -36,18 +36,48 @@ All image and font paths in the file are relative to `design/`, so it works from
 
 ### What's on the canvas
 
-Every screen is a top-level frame. Names start with the step number and level.
+The canvas has one **section per level**, stacked top to bottom: `L01 · McD`, `L02 · STARBAGS`, `L03 · SWEETGREED`, `L04 · CARBONUS` and `L05 · NOBULL`. Two more sections follow: `Explorations · awaiting a pick` and `Cross-level · mmm.supply`.
 
-| Group | Frames |
+Each level section has:
+
+- **A header** in the level's brand color, with a **Flow Coverage** table showing the desktop and mobile status of every flow.
+- **A desktop row and a mobile row.** Columns are in the same order in every level, so you can read one flow straight down across levels:
+
+  Home → Search → Add USDC → Place Order → Order Confirmed → Token Detail → Swap → Portfolio → Link Blackbird → Claim Fees → Level Up
+
+- **Onboarding rows, McD only:** Logged Out, Log In and First Visit. New users always start at McD.
+- **Level Up placement:** The Level Up screen sits at the end of the level you're leaving. NOBULL is the top level, so it has a "no level-up" card instead.
+- **Mobile stubs:** Mobile flows that haven't been designed yet are 390×844 stubs labeled `… · stub`.
+
+| Section | What's in it |
 |---|---|
-| **Level 1 · McD (McDoughnald's)** | 01 First Visit (Empty), 02 Add USDC, 03 Place First Order, 04 Order Confirmed, 05 Home (Authed · $62.47) |
-| **Promotions** | 06 Level Up → STARBAGS, Level Up → SWEETGREED · $1,000, Level Up → CARBONUS · $10,000, Level Up → NOBULL · $100,000 |
-| **Level homes** | 07 STARBAGS ($486.20), 08 SWEETGREED ($4,812.55), 09 CARBONUS ($38,450), 10 NOBULL ($128,940) |
-| **Mobile** | A `Mobile · …` version of each screen above, at 390 wide. Mobile follows the desktop rules: crypto-only Add USDC sheet, search on every home, the same portfolio cards, and NOBULL in Direction C. |
-| **mmm.supply** | The side-scrolling merch lander |
-| **Boards** | `NOBULL · Layout explorations` has directions A The Statement, B Private Terminal, C The Menu and C Search “tun”. Direction C is the chosen NOBULL direction. `Level search · “tun” results` shows the search results state for McD, STARBAGS, SWEETGREED and CARBONUS. `McD · Launch a Token · v2 · 5 takes` explores the flow behind the **Launch a Token** button. No take has been picked yet. |
+| **L01 · McD** | Every desktop flow, including onboarding. Mobile: Home, First Visit, Add USDC, Place First Order, Order Confirmed and Level Up. The rest are stubs. |
+| **L02–L04 · STARBAGS, SWEETGREED, CARBONUS** | Every desktop flow, re-themed per level: palette, type, radii, receipts with level logos and level progress (stars, stamps, guest check), and portfolio values that match the level. Mobile: Home and Level Up. The rest are stubs. |
+| **L05 · NOBULL** | Direction C, **The Menu** (picked). Every desktop flow is restacked into the centered 880 menu card. Mobile: Home. The rest are stubs. |
+| **Explorations** | `McD · Launch a Token · v2 · 5 takes` and `McD · Leaderboard · 5 takes`. Neither has a pick yet. |
+| **Cross-level** | mmm.supply, the side-scrolling merch lander. |
 
-Previews of the main states are in `design/previews/`.
+Previews are in `design/previews/`. Level section overviews are in `design/previews/sections/`.
+
+![STARBAGS section](design/previews/sections/L02-starbags.png)
+
+### Status (Oct 2026)
+
+**Done**
+
+- Every core desktop flow exists at every level.
+- STARBAGS uses Newsreader as its serif (a stand-in for Starbucks' Lander) with no italics, and its receipt has a Starbucks Rewards-style star tracker.
+- Restaurant fees are set at launch. Creator fees can only be claimed to a Blackbird wallet.
+- Dish sales show citywide sales of the dish, matched to the token by name, with a daily breakdown.
+
+**Still TBD**
+
+- **Dish sales mechanics** aren't how we want them yet. Matching by dish name, the region scope, attribution to the linked restaurant, and the data source are all placeholders. The numbers are mock data.
+- **Launch a Token flow:** five takes are on the board, and none is picked or designed through.
+- **Leaderboard:** it was removed from the home screens. Five replacement takes are on the board, and none is picked.
+- **Mobile:** most flows are stubs on every level. Mobile Search is missing everywhere.
+- **In-between screens need designer polish.** Overlays, modals, Place Order states, and the L2–L5 screens generated from McD were re-themed systematically and need a hand pass. Known gaps: every level reuses $HASHBRN on Token Detail, Place Order fee math wasn't recalculated except on NOBULL, and SWEETGREED and CARBONUS have no active-tab nav style.
+- The **prototype** (`index.html`) doesn't have the new level flows yet.
 
 ![Launch a Token, v2](design/previews/mcd-launch-token-v2.png)
 
@@ -63,7 +93,7 @@ Tokens live in the file's **variables**. Use them instead of hard-coded values w
   - **Brand:** `lvl-brand`, `lvl-on-brand`, `lvl-action`, `lvl-on-action`, `lvl-highlight`
   - **Market colors:** `lvl-up`, `lvl-down`
 - **Brand palettes:** `mcd-*`, `sb-*` (STARBAGS), `sg-*` (SWEETGREED), `cb-*` (CARBONUS), `nb-*` and `nobu-*` (NOBULL), `mmm-*` (mmm.supply).
-- **Fonts:** `font-*` variables per brand. `font-nobu-serif` drives every serif in NOBULL Direction C, so changing that one value swaps the face.
+- **Fonts:** `font-*` variables per brand. `font-nobu-serif` drives every serif in NOBULL Direction C, so changing that one value swaps the face. `font-sb-serif` (Newsreader) does the same for STARBAGS.
 - **Alternates:** `vault-*` and `ctr-*` are retired NOBULL explorations. Leave them alone unless you're reviving one.
 
 ### Level rules
@@ -121,7 +151,7 @@ Fonts live in `design/fonts/`.
 
 | Folder | Fonts | In git? |
 |---|---|---|
-| `design/fonts/google/` | Anton, Archivo, Archivo Black, Cormorant Garamond, Fraunces, IBM Plex Mono, Instrument Sans, Inter, Libre Baskerville, Libre Caslon Text, Lora, Nunito Sans, Oswald, Silkscreen, Yellowtail | Yes. These are open-licensed TTFs from Google Fonts, one file per weight and style the design uses. Pencil loads them by name, and the prototype loads them from Google Fonts, so these files are for offline use and handoff. |
+| `design/fonts/google/` | Anton, Archivo, Archivo Black, Cormorant Garamond, Fraunces, IBM Plex Mono, Instrument Sans, Inter, Libre Baskerville, Libre Caslon Text, Lora, Newsreader, Nunito Sans, Oswald, Silkscreen, Yellowtail | Yes. These are open-licensed TTFs from Google Fonts, one file per weight and style the design uses. Pencil loads them by name, and the prototype loads them from Google Fonts, so these files are for offline use and handoff. |
 | `design/fonts/PPEditorialNew-Light.ttf` | PP Editorial New Light | Yes. It's embedded in the design file and renders the NOBULL Direction C serif (`font-nobu-serif`). |
 | `design/fonts/pangram/` | Editorial New, every weight; PP Editorial Old | Yes. These are the rest of the Pangram Pangram family, for installing locally and for any `@font-face` the prototype needs. |
 
